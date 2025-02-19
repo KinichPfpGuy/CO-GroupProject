@@ -86,13 +86,8 @@ class RISCAssembler:
         }
 
         self.labels = {}
-
-    @staticmethod
-    def remove_prefix(binary_string):
-        return binary_string[2:]
         
-    @staticmethod
-    def int_to_5bit_binary(n):
+    def int_to_5bit_binary(self, n):
         if n < 0 or n > 31:
             raise ValueError("Input must be between 0 and 31 (inclusive) for 5-bit representation.")
         binary = ''
@@ -101,8 +96,7 @@ class RISCAssembler:
             n //= 2  
         return binary
     
-    @staticmethod
-    def to_12bit_binary(offset):
+    def to_12bit_binary(self, offset):
         if not (-2048 <= offset <= 2047):  # 12-bit signed range check
             raise ValueError("Offset out of 12-bit range (-2048 to 2047)")
         
@@ -157,34 +151,39 @@ class RISCAssembler:
             rs1_bin = self.registers[parts[2]]
             rs2_bin = self.registers[parts[3]]
     
-            funct7 = self.remove_prefix(bin(self.funct7[mnemonic]))
+            funct7 = self.funct7[mnemonic]
             funct7 = '{:07b}'.format(int(funct7))
-            funct3 = self.remove_prefix(bin(self.funct3[mnemonic]))
-            funct3 = '{:03b}'.format(int(funct7))
+            funct3 = self.funct3[mnemonic]
+            funct3 = '{:03b}'.format(int(funct3))
     
             binary = f"{funct7}{self.int_to_5bit_binary(rs2_bin)}{self.int_to_5bit_binary(rs1_bin)}{funct3}{self.int_to_5bit_binary(rd_bin)}{opcode}"
-        
+            
+            if len(binary) != 32:
+                raise ValueError(f"Generated binary has invalid length: {len(binary)} bits")
+            
             return binary
         
         # S-Type instructions
-        elif parts[0] in ['sb', 'sh', 'sw']:
+        elif parts[0] in ['sw']:
             opcode = '0100011'
             mnemonic = parts[0]
             if mnemonic not in self.opcodes:
                 raise ValueError("Unsupported S-type Instructions: ", mnemonic)
             rs2 = parts[1]
-            offset_rs1 = parts[2]
-            offset, rs1 = offset_rs1.split('(')
-            rs1 = rs1.strip(')') 
+            offset = parts[2]
+            rs1 = parts[3]
 
             rs1_bin = self.int_to_5bit_binary(self.registers[rs1])
             rs2_bin = self.int_to_5bit_binary(self.registers[rs2])
 
-            funct3 = self.remove_prefix(bin(self.funct3[mnemonic]))
+            funct3 = self.funct3[mnemonic]
+            funct3 = '{:03b}'.format(int(funct3))
+
             imm = self.to_12bit_binary(int(offset))
             imm_11_5 = imm[:7]  # First 7 bits
             imm_4_0 = imm[7:]   # Last 5 bits
             binary = f"{imm_11_5}{rs2_bin}{rs1_bin}{funct3}{imm_4_0}{opcode}"
+            
             if len(binary) != 32:
                 raise ValueError(f"Generated binary has invalid length: {len(binary)} bits")
     
@@ -207,24 +206,24 @@ class RISCAssembler:
             imm_19_12 = (imm >> 12) & 0xFF    # Bits 19-12
 
             binary_instruction = (imm_20 << 31) | (imm_19_12 << 12) | (imm_11 << 20) | (imm_10_1 << 21) | (rd << 7) | opcode
-
+            
             return '{:032b}'.format(binary_instruction)
         
         # I-Type instructions
         elif parts[0] in ['addi', 'lw', 'jalr']:
-            if parts[0]=='lw':
-                funct3=self.funct3[parts[0]]
-                rd=self.registers[parts[1]]
-                rs1=self.registers[parts[3]]
-                imm=int(parts[2]) & 0xFFF
+            if parts[0] == 'lw':
+                funct3 = self.funct3[parts[0]]
+                rd = self.registers[parts[1]]
+                rs1 = self.registers[parts[3]]
+                imm = int(parts[2]) & 0xFFF
             else:
-
                 funct3 = self.funct3[parts[0]]
                 rd = self.registers[parts[1]]
                 rs1 = self.registers[parts[2]]
                 imm = int(parts[3]) & 0xFFF  
             
             binary_instruction = (imm << 20) | (rs1 << 15) | (funct3 << 12) | (rd << 7) | opcode
+            
             return '{:032b}'.format(binary_instruction)
 
         raise ValueError("Unsupported instruction")
@@ -232,7 +231,7 @@ class RISCAssembler:
 # Example usage
 assembler = RISCAssembler()
 
-file = r"C:\Users\ajays\OneDrive\Desktop\text0.txt"
+file = r"C:\Users\ajays\OneDrive\Desktop\text1.txt"
 with open(file, 'r') as f:
     address = 0x1000
     for line in f:
