@@ -115,7 +115,6 @@ class RISCAssembler:
             imm3 = int(imm[8:12], 2)
             imm4 = int(imm[1], 2)
             return '{:032b}'.format(imm4 << 31|imm2 << 25|rs2 << 20|rs1 << 15|funct3 << 12|imm3 << 8|imm4 << 7|opcode)
-
         raise ValueError("Unsupported instruction")
 
 # Example usage
