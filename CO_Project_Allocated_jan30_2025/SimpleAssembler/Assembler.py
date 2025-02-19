@@ -115,6 +115,24 @@ class RISCAssembler:
             imm3 = int(imm[8:12], 2)
             imm4 = int(imm[1], 2)
             return '{:032b}'.format(imm4 << 31|imm2 << 25|rs2 << 20|rs1 << 15|funct3 << 12|imm3 << 8|imm4 << 7|opcode)
+        else if parts[0] in ['jal']:
+            instr = parts[0]
+            rd = registers[parts[1]]
+            imm = int(parts[2])
+            opcode = opcodes[instr]
+
+                # Ensure the immediate is within signed 21-bit range (-2^20 to 2^20 - 1)
+            if imm < -(2**20) or imm > (2**20 - 1):
+                raise ValueError("Immediate value is out of range")
+
+            imm_20 = (imm >> 20) & 0x1        # Bit 20
+            imm_10_1 = (imm >> 1) & 0x3FF     # Bits 10-1
+            imm_11 = (imm >> 11) & 0x1        # Bit 11
+            imm_19_12 = (imm >> 12) & 0xFF    # Bits 19-12
+
+            binary_instruction = (imm_20 << 31) | (imm_19_12 << 12) | (imm_11 << 20) | (imm_10_1 << 21) | (rd << 7) | opcode
+
+            return '{:032b}'.format(binary_instruction)
         raise ValueError("Unsupported instruction")
 
 # Example usage
