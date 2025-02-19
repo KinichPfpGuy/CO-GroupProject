@@ -120,7 +120,7 @@ class RISCAssembler:
             self.labels[parts[0]] = address
             parts.pop(0)
             
-        if len(parts) < 4 or parts[0] not in self.opcodes:
+        if parts[0] not in self.opcodes:
             raise ValueError("Invalid instruction format")
         
         opcode = self.opcodes[parts[0]]
@@ -130,16 +130,19 @@ class RISCAssembler:
             funct3 = self.funct3[parts[0]]
             rs1 = self.registers[parts[1]]
             rs2 = self.registers[parts[2]]
-            if parts[3] == '0':
-                offset = 0
+            offset_str = parts[3]
+            if offset_str in self.labels:
+                label_address = self.labels[offset_str]
+                offset = (label_address - address) >> 1
             else:
-                offset = (self.labels[parts[3]] - address) >> 1
-            imm = format(offset & 0xFFF, '012b')
+                offset = int(offset_str) >> 1
+
+            imm = format(offset & 0xFFF, '012b')           
             imm1 = int(imm[0], 2)
             imm2 = int(imm[2:8], 2)
             imm3 = int(imm[8:12], 2)
             imm4 = int(imm[1], 2)
-            return '{:032b}'.format(imm4 << 31 | imm2 << 25 | rs2 << 20 | rs1 << 15 | funct3 << 12 | imm3 << 8 | imm4 << 7 | opcode)
+            return '{:032b}'.format(imm1 << 31 | imm2 << 25 | rs2 << 20 | rs1 << 15 | funct3 << 12 | imm3 << 8 | imm4 << 7 | opcode)
             
         # R-Type instructions
         elif parts[0] in ['add', 'sub', 'and', 'or', 'srl', 'slt']:
@@ -231,7 +234,7 @@ class RISCAssembler:
 # Example usage
 assembler = RISCAssembler()
 
-file = r"C:\Users\ajays\OneDrive\Desktop\text1.txt"
+file = r"C:\Users\ajays\OneDrive\Desktop\text6.txt"
 with open(file, 'r') as f:
     address = 0x1000
     for line in f:
