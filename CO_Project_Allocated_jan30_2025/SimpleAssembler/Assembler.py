@@ -135,50 +135,29 @@ class RISCAssembler:
             return '{:032b}'.format(binary_instruction)
         raise ValueError("Unsupported instruction")
         #I-Type inrtuction
-    def assemble_itype(opcode, funct3, rd, rs1, imm):
-        instruction = (imm << 20) | (rs1 << 15) | (funct3 << 12) | (rd << 7) | opcode
-        return instruction
+    def assemble(self, address, instruction):
+    instruction = instruction.replace(',', ' ').replace(':', ' ').replace("(", " ").replace(")", " ")
+    parts = instruction.split()
+    
+    if len(parts) == 5:  
+        self.labels[parts[0]] = address
+        parts.pop(0)
+        
+    if len(parts) < 4 or parts[0] not in self.opcodes:
+        raise ValueError("Invalid instruction format")
+    
+    opcode = self.opcodes[parts[0]]
+    
+    if parts[0] in ['addi', 'lw', 'jalr']:
+        funct3 = self.funct3[parts[0]]
+        rd = self.registers[parts[1]]
+        rs1 = self.registers[parts[2]]
+        imm = int(parts[3]) & 0xFFF  
+        
+        binary_instruction = (imm << 20) | (rs1 << 15) | (funct3 << 12) | (rd << 7) | opcode
+        return '{:032b}'.format(binary_instruction)
 
-    def assemble_lw(rd, rs1, imm):
-        opcode = 0b0000011  
-        funct3 = 0b010     
-        return assemble_itype(opcode, funct3, rd, rs1, imm)
-
-    def assemble_addi(rd, rs1, imm):
-        opcode = 0b0010011  
-        funct3 = 0b000      
-        return assemble_itype(opcode, funct3, rd, rs1, imm)
-
-    def assemble_jalr(rd, rs1, imm):
-        opcode = 0b1100111 
-        funct3 = 0b000      
-        return assemble_itype(opcode, funct3, rd, rs1, imm)
-    def main():
-        lines = [line.strip() for line in file.readlines()]
-            
-        if len(lines) < 4:
-            print("Error: Not enough lines in input.txt. Expected at least 4 lines.")
-            return
-
-        choice = int(lines[0]) 
-        rd = int(lines[1])      
-        rs1 = int(lines[2])    
-        imm = int(lines[3])    
-
-       
-        if choice == 1:
-            machine_code = assemble_lw(rd, rs1, imm)
-            print(f"lw x{rd}, {imm}(x{rs1}) -> Machine code (binary): {bin(machine_code)[2:].zfill(32)}")
-        elif choice == 2:
-            machine_code = assemble_addi(rd, rs1, imm)
-            print(f"addi x{rd}, x{rs1}, {imm} -> Machine code (binary): {bin(machine_code)[2:].zfill(32)}")
-        elif choice == 3:
-            machine_code = assemble_jalr(rd, rs1, imm)
-            print(f"jalr x{rd}, x{rs1}, {imm} -> Machine code (binary): {bin(machine_code)[2:].zfill(32)}")
-        else:
-            print("Invalid choice. Please select 1, 2, or 3.")
-   
-    main()
+    raise ValueError("Unsupported instruction")  
         
 # Example usage
 assembler = RISCAssembler()
