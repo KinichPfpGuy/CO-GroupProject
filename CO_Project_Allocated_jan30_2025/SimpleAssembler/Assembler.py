@@ -87,7 +87,33 @@ class RISCAssembler:
 
         self.labels = {
         }
-
+    def remove_prefix(binary_string):
+        return binary_string[2:]
+        
+    def int_to_5bit_binary(n):
+        if n < 0 or n > 31:
+            raise ValueError("Input must be between 0 and 31 (inclusive) for 5-bit representation.")
+        binary = ''
+        for i in range(5):
+            binary = str(n % 2) + binary  
+            n //= 2  
+        return binary
+    
+    def to_12bit_binary(offset):
+        if not (-2048 <= offset <= 2047):  # 12-bit signed range check
+            raise ValueError("Offset out of 12-bit range (-2048 to 2047)")
+        
+        # Convert negative numbers using two's complement manually
+        if offset < 0:
+            offset = (2 ** 12) + offset  # Compute two's complement manually
+        # Convert to binary manually using division by 2
+        
+        binary = ""
+        for _ in range(12):  # There are 12 bits
+            binary = str(offset % 2) + binary  # Get remainder (0 or 1) and add to the left
+            offset = offset // 2  # Integer division by 2
+    
+        return binary
     def assemble(self, address, instruction):
         instruction = instruction.replace(',', ' ').replace(':', ' ').replace("(", " ").replace(")", " ")
         parts = instruction.split()
@@ -96,8 +122,7 @@ class RISCAssembler:
             parts.pop(0)
         if len(parts) < 4 or parts[0] not in self.opcodes:
             raise ValueError("Invalid instruction format")
-        
-
+    
         opcode = self.opcodes[parts[0]]
         if parts[0] in ['beq', 'blt', 'bne']:
             # B-Type instruction
@@ -115,6 +140,51 @@ class RISCAssembler:
             imm3 = int(imm[8:12], 2)
             imm4 = int(imm[1], 2)
             return '{:032b}'.format(imm4 << 31|imm2 << 25|rs2 << 20|rs1 << 15|funct3 << 12|imm3 << 8|imm4 << 7|opcode)
+            
+        #R type instructions
+        
+        elif parts[0] in ['add', 'sub', 'and', 'or', 'srl', 'slt']:
+            opcode='0110011'
+            mnemonic = parts[0]
+            if mnemonic not in self.opcodes:
+                raise ValueError("Unsupported R-type Instructions: ",mnemonic)
+            rd_bin = self.registers[parts[1]]
+            rs1_bin = self.registers[parts[2]]
+            rs2_bin = self.registers[parts[3]]
+    
+            funct7 =remove_prefix(self.funct7[mnemonic])
+            funct3 =remove_prefix(self.funct3[mnemonic])
+    
+            binary = f"{funct7}{rs2_bin}{rs1_bin}{funct3}{rd_bin}{opcode}"
+            if len(binary) != 32:
+                raise ValueError(f"Generated binary has invalid length: {len(binary)} bits")
+        
+            return binary
+
+        
+            #S-type instructions
+        elif parts[0] in ['sb','sh','sw']:
+            opcode='0100011'
+            mnemonic=parts[0]
+            if mnemonic not in self.opcodes:
+                raise ValueError("Unsupported R-type Instructions: ",mnemonic)
+            rs2=parts[1]
+            offset_rs1=parts[2]
+            offset, rs1 = offset_rs1.split('(')
+            rs1 = rs1.strip(')') 
+
+            rs1_bin=int_to_5bit_binary(self.registers[rs1])
+            rs2_bin=int_to_5bit_binary(self.registers[rs2])
+
+            func3=remove_prefix(self.funct3[mnemonic])
+            imm=to_12bit_binary(offset)
+            imm_11_5 = imm[:7]  # First 7 bits
+            imm_4_0 = imm[7:]   # Last 5 bits
+            binary = f"{imm_11_5}{rs2_bin}{rs1_bin}{funct3}{imm_4_0}{opcode}"
+            if len(binary) != 32:
+                raise ValueError(f"Generated binary has invalid length: {len(binary)} bits")
+    
+            return binary
         else if parts[0] in ['jal']:
             instr = parts[0]
             rd = registers[parts[1]]
