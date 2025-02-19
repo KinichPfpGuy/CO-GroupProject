@@ -213,7 +213,7 @@ class RISCAssembler:
         # I-Type instructions
         elif parts[0] in ['addi', 'lw', 'jalr']:
             if parts[0]=='lw':
-                funct3=self.func3[parts[0]]
+                funct3=self.funct3[parts[0]]
                 rd=self.registers[parts[1]]
                 rs1=self.registers[parts[3]]
                 imm=int(parts[2]) & 0xFFF
