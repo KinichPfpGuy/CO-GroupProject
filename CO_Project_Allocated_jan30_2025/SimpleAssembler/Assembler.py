@@ -158,7 +158,9 @@ class RISCAssembler:
             rs2_bin = self.registers[parts[3]]
     
             funct7 = self.remove_prefix(bin(self.funct7[mnemonic]))
+            funct7 = '{:07b}'.format(int(funct7))
             funct3 = self.remove_prefix(bin(self.funct3[mnemonic]))
+            funct3 = '{:03b}'.format(int(funct7))
     
             binary = f"{funct7}{self.int_to_5bit_binary(rs2_bin)}{self.int_to_5bit_binary(rs1_bin)}{funct3}{self.int_to_5bit_binary(rd_bin)}{opcode}"
         
