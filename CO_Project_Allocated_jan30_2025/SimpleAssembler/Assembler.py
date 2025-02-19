@@ -212,10 +212,17 @@ class RISCAssembler:
         
         # I-Type instructions
         elif parts[0] in ['addi', 'lw', 'jalr']:
-            funct3 = self.funct3[parts[0]]
-            rd = self.registers[parts[1]]
-            rs1 = self.registers[parts[2]]
-            imm = int(parts[3]) & 0xFFF  
+            if parts[0]=='lw':
+                func3=self.func3[parts[0]]
+                rd=self.registers[parts[1]]
+                rs1=self.registers[parts[3]]
+                imm=int(parts[2]) & 0xFFF
+            else:
+
+                funct3 = self.funct3[parts[0]]
+                rd = self.registers[parts[1]]
+                rs1 = self.registers[parts[2]]
+                imm = int(parts[3]) & 0xFFF  
             
             binary_instruction = (imm << 20) | (rs1 << 15) | (funct3 << 12) | (rd << 7) | opcode
             return '{:032b}'.format(binary_instruction)
