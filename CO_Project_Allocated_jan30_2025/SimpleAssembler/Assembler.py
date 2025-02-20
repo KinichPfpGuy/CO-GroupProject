@@ -84,8 +84,6 @@ class RISCAssembler:
             't5': 30,
             't6': 31,
         }
-
-        self.labels = {}
         
     def int_to_5bit_binary(self, n):
         if n < 0 or n > 31:
@@ -97,29 +95,27 @@ class RISCAssembler:
         return binary
     
     def to_12bit_binary(self, offset):
-        if not (-2048 <= offset <= 2047):  # 12-bit signed range check
+        if not (-2048 <= offset <= 2047):
             raise ValueError("Offset out of 12-bit range (-2048 to 2047)")
         
-        # Convert negative numbers using two's complement manually
         if offset < 0:
-            offset = (2 ** 12) + offset  # Compute two's complement manually
-        # Convert to binary manually using division by 2
+            offset = (2 ** 12) + offset
         
         binary = ""
-        for _ in range(12):  # There are 12 bits
-            binary = str(offset % 2) + binary  # Get remainder (0 or 1) and add to the left
-            offset = offset // 2  # Integer division by 2
+        for _ in range(12):
+            binary = str(offset % 2) + binary
+            offset = offset // 2 
     
         return binary
 
-    def assemble(self, address, instruction):
+    def assemble(self, labels, address, instruction):
         instruction = instruction.replace(',', ' ').replace(':', ' ').replace("(", " ").replace(")", " ")
         parts = instruction.split()
         
         if len(parts) == 5:  
-            self.labels[parts[0]] = address
             parts.pop(0)
-            
+        if len(parts) == 4 and "jal" in parts:
+            parts.pop(0)
         if parts[0] not in self.opcodes:
             raise ValueError("Invalid instruction format")
         
@@ -131,8 +127,8 @@ class RISCAssembler:
             rs1 = self.registers[parts[1]]
             rs2 = self.registers[parts[2]]
             offset_str = parts[3]
-            if offset_str in self.labels:
-                label_address = self.labels[offset_str]
+            if offset_str in labels:
+                label_address = labels[offset_str]
                 offset = (label_address - address) >> 1
             else:
                 offset = int(offset_str) >> 1
@@ -183,8 +179,8 @@ class RISCAssembler:
             funct3 = '{:03b}'.format(int(funct3))
 
             imm = self.to_12bit_binary(int(offset))
-            imm_11_5 = imm[:7]  # First 7 bits
-            imm_4_0 = imm[7:]   # Last 5 bits
+            imm_11_5 = imm[:7]
+            imm_4_0 = imm[7:]
             binary = f"{imm_11_5}{rs2_bin}{rs1_bin}{funct3}{imm_4_0}{opcode}"
             
             if len(binary) != 32:
@@ -194,19 +190,19 @@ class RISCAssembler:
         
         # J-Type instructions (jal)
         elif parts[0] in ['jal']:
-            instr = parts[0]
             rd = self.registers[parts[1]]
-            imm = int(parts[2])
-            opcode = self.opcodes[instr]
+            target = parts[2]
 
-            # Ensure the immediate is within signed 21-bit range (-2^20 to 2^20 - 1)
-            if imm < -(2**20) or imm > (2**20 - 1):
-                raise ValueError("Immediate value is out of range")
+            if target in labels:
+                label_address = labels[target]
+                offset = label_address - address
+            else: 
+                offset = int(target)
 
-            imm_20 = (imm >> 20) & 0x1        # Bit 20
-            imm_10_1 = (imm >> 1) & 0x3FF     # Bits 10-1
-            imm_11 = (imm >> 11) & 0x1        # Bit 11
-            imm_19_12 = (imm >> 12) & 0xFF    # Bits 19-12
+            imm_20 = (offset >> 20) & 0x1       
+            imm_10_1 = (offset >> 1) & 0x3FF    
+            imm_11 = (offset >> 11) & 0x1       
+            imm_19_12 = (offset >> 12) & 0xFF  
 
             binary_instruction = (imm_20 << 31) | (imm_19_12 << 12) | (imm_11 << 20) | (imm_10_1 << 21) | (rd << 7) | opcode
             
@@ -234,9 +230,18 @@ class RISCAssembler:
 # Example usage
 assembler = RISCAssembler()
 
-file = r"C:\Users\ajays\OneDrive\Desktop\text6.txt"
+file = r"C:\Users\ajays\OneDrive\Desktop\text3.txt"
+labels = {}
 with open(file, 'r') as f:
     address = 0x1000
     for line in f:
-        print(assembler.assemble(address, line))
+        line = line.replace(',', ' ').replace(':', ' ').replace("(", " ").replace(")", " ")
+        parts = line.split()
+        labels[parts[0]] = address
+        address += 4
+
+with open(file, 'r') as f:
+    address = 0x1000
+    for line in f:
+        print(assembler.assemble(labels, address, line))
         address += 4
