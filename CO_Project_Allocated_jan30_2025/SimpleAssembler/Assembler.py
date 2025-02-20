@@ -230,9 +230,11 @@ class RISCAssembler:
 # Example usage
 assembler = RISCAssembler()
 
-file = r"C:\Users\ajays\OneDrive\Desktop\text3.txt"
+input_file = r"C:\Users\Mritunjay\OneDrive\Desktop\test0.txt"
+output_file = r"C:\Users\Mritunjay\OneDrive\Desktop\output.txt"
 labels = {}
-with open(file, 'r') as f:
+
+with open(input_file, 'r') as f:
     address = 0x1000
     for line in f:
         line = line.replace(',', ' ').replace(':', ' ').replace("(", " ").replace(")", " ")
@@ -240,8 +242,10 @@ with open(file, 'r') as f:
         labels[parts[0]] = address
         address += 4
 
-with open(file, 'r') as f:
+with open(output_file, 'w') as out_f:
     address = 0x1000
-    for line in f:
-        print(assembler.assemble(labels, address, line))
-        address += 4
+    with open(input_file, 'r') as f:
+        for line in f:
+            binary_instruction = assembler.assemble(labels, address, line)
+            out_f.write(binary_instruction + '\n')
+            address += 4
