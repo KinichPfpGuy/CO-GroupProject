@@ -60,7 +60,7 @@ memory_addresses = {
 }
 
 def trace(pc):    
-    return (f"0b{format(pc, '032b')} "f"0b{format(registers['x0'], '032b')} "f"0b{format(registers['x1'], '032b')} "f"0b{format(registers['x2'], '032b')} "f"0b{format(registers['x3'], '032b')} "f"0b{format(registers['x4'], '032b')} "f"0b{format(registers['x5'], '032b')} "f"0b{format(registers['x6'], '032b')} "f"0b{format(registers['x7'], '032b')} "f"0b{format(registers['x8'], '032b')} "f"0b{format(registers['x9'], '032b')} "f"0b{format(registers['x10'], '032b')} "f"0b{format(registers['x11'], '032b')} "f"0b{format(registers['x12'], '032b')} "f"0b{ format(registers['x13'], '032b')} "f"0b{format(registers['x14'], '032b')} "f"0b{format(registers['x15'], '032b')} "f"0b{format(registers['x16'], '032b')} "f"0b{format(registers['x17'], '032b')} "f"0b{format(registers['x18'], '032b')} "f"0b{format(registers['x19'], '032b')} "f"0b{ format(registers['x20'], '032b')} "f"0b{format(registers ['x21'], '032b')} "f"0b{format(registers['x22'], '032b')} "f"0b{format(registers['x23'], '032b')} "f"0b{format(registers['x24'], '032b')} " f"0b{format(registers['x25'], '032b')} "f"0b{format(registers ['x26'], '032b')} "f"0b{format (registers['x27'], '032b')} "f"0b{format(registers['x28'], '032b')} "f"0b{format(registers['x29'], '032b')} "f"0b{format(registers['x30'], '032b')} "f"0b{format(registers['x31'], '032b')} ") 
+    return (f"0b{format(pc & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x0'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x1'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x2'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x3'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x4'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x5'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x6'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x7'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x8'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x9'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x10'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x11'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x12'] & 0xFFFFFFFF, '032b')} "f"0b{ format(registers['x13'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x14'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x15'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x16'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x17'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x18'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x19'] & 0xFFFFFFFF, '032b')} "f"0b{ format(registers['x20'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers ['x21'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x22'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x23'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x24'] & 0xFFFFFFFF, '032b')} " f"0b{format(registers['x25'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers ['x26'] & 0xFFFFFFFF, '032b')} "f"0b{format (registers['x27'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x28'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x29'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x30'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x31'] & 0xFFFFFFFF, '032b')} ") 
 
 def type_checker(opcode):
     if opcode == "0110011":
@@ -105,6 +105,13 @@ def srl(rd, rs1, rs2):
 #I Type instructions
 def addi(rd, rs1, imm):
     registers[rd] = registers[rs1] + int(imm)
+
+#B Type instructions
+def bne(rs1, rs2, imm, pc):
+    if registers[rs1] != registers[rs2]:
+        pc = pc + (int(imm) << 1) - 4
+    return pc
+
 
 #encodings 
 def r_type(line):
@@ -249,17 +256,23 @@ with open(output_file, "w") as f:
         x = x.replace(',', ' ')
         x = x.replace('#', '')
         x = x.split(" ")
-        print(x)
+        print(pc, x)
         if x[0] == "srl":
             srl(x[1], x[2], x[3])
         elif x[0] == "slt":
             slt(x[1], x[2], x[3])
         elif x[0] == "addi":
             addi(x[1], x[2], x[3])
+        elif x[0] == "bne":
+            pc = bne(x[1], x[2], x[3], pc)
+        elif x[0] == "add":
+            add(x[1], x[2], x[3])
+        elif x[0] == "sub":
+            sub(x[1], x[2], x[3])
         f.write(trace(pc)+"\n")
         pc += 4
     for x in data_memory:
-        f.write("0x"+format(x, '08X')+":0b"+format(data_memory[x], '032b')+"\n")
+        f.write("0x"+format(x, '08X')+":0b"+format(data_memory[x] & 0xFFFFFFFF, '032b')+"\n")
 
 
 
