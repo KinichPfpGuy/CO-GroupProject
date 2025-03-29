@@ -106,6 +106,32 @@ def srl(rd, rs1, rs2):
 def addi(rd, rs1, imm):
     registers[rd] = registers[rs1] + int(imm)
 
+def lw(rd, rs1, offset):
+    base_register = registers[rs1]
+    address = base_register + int(offset)
+
+    #convert to hex version 
+    hex_address = hex(address)
+    if hex_address in memory_addresses:
+        registers[rd] = memory_addresses[hex_address]
+    else:
+        message = "Invalid"
+        return message
+
+#S type instructions 
+def sw(rs1, rs2, offset):
+    #address = r1 + offset 
+    base_register = registers[rs1]
+    source_register = base_register + int(offset)
+
+    #convert to hex version 
+    hex_source_register = hex(source_register)
+    if hex_source_register in memory_addresses:
+        memory_addresses[hex_source_register] = registers[rs2]
+    else:
+        message = "Invalid"
+        return message 
+
 #B Type instructions
 def bne(rs1, rs2, imm, pc):
     if registers[rs1] != registers[rs2]:
