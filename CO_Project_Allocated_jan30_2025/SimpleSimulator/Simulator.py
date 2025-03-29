@@ -118,22 +118,16 @@ def r_type(line):
     rs2 = "x" + str(int(rs2, 2))
     if funct7 == "0100000" and func3 == "000":
         operation = "sub"
-        sub(rd, rs1, rs2)
     elif funct7 == "0000000" and func3 == "000":
         operation = "add"
-        add(rd, rs1, rs2)
     elif funct7 == "0000000" and func3 == "010":
         operation = "slt"
-        slt(rd, rs1, rs2)
     elif funct7 == "0000000" and func3 == "101":
         operation = "srl"
-        srl(rd, rs1, rs2)
     elif funct7 == "0000000" and func3 == "110":
         operation = "or"
-        or1(rd, rs1, rs2)
     elif funct7 == "0000000" and func3 == "111":
         operation = "and"
-        and1(rd, rs1, rs2)
            
     instruction = operation + " " + rd + "," + rs1 + "," + rs2
     return instruction
@@ -152,7 +146,6 @@ def i_type(line):
         instruction = operation + " " + rd + ", " + imm + "(" + rs1 + ")"
     elif func3 == "000" and opcode == "0010011":
         operation = "addi"
-        addi(rd, rs1, imm)
         instruction = operation + " " + rd + "," + rs1 + ",#" + imm
     elif func3 == "000" and opcode == "1100111":
         operation = "jalr"
@@ -219,32 +212,56 @@ def j_type(line):
 address = {}
 
 with open(input_file, 'r') as f:
-    x = 0x0000
+    x = 0x0004
     pc = 0
     for line in f:
         address[x] = pc
         x += 4
-        pc += 1
+        pc += 4
 
-with open(output_file, 'w') as out_f:
-    with open(input_file, "r") as f:
-        pc = 4
-        for line in f:
-            line = line.strip()
-            opcode = line[-7:]
-            type = type_checker(opcode)
-            if type == "r":
-                instruction = r_type(line)
-            elif type == "i":
-                instruction = i_type(line)
-            elif type == "s":
-                instruction = s_type(line)
-            elif type == "b":
-                instruction = b_type(line)
-            elif type == "j":
-                instruction = j_type(line)
-            x = trace(pc)
-            out_f.write(str(x)+"\n")
-            pc+=4
-        for x in data_memory:
-            out_f.write("0x"+format(x, '08X')+":0b"+format(data_memory[x], '032b')+"\n")
+
+with open(input_file, "r") as f:
+    pc = 4
+    for line in f:
+        line = line.strip()
+        opcode = line[-7:]
+        type = type_checker(opcode)
+        if type == "r":
+            instruction = r_type(line)
+        elif type == "i":
+            instruction = i_type(line)
+        elif type == "s":
+            instruction = s_type(line)
+        elif type == "b":
+            instruction = b_type(line)
+        elif type == "j":
+            instruction = j_type(line)
+        x = instruction
+        address[pc] = x
+        x = trace(pc)
+        pc+=4
+t = pc
+
+with open(output_file, "w") as f:
+    pc = 4
+    while (pc < t):
+        x = address[pc]
+        x = x.replace(',', ' ')
+        x = x.replace('#', '')
+        x = x.split(" ")
+        print(x)
+        if x[0] == "srl":
+            srl(x[1], x[2], x[3])
+        elif x[0] == "slt":
+            slt(x[1], x[2], x[3])
+        elif x[0] == "addi":
+            addi(x[1], x[2], x[3])
+        f.write(trace(pc)+"\n")
+        pc += 4
+    for x in data_memory:
+        f.write("0x"+format(x, '08X')+":0b"+format(data_memory[x], '032b')+"\n")
+
+
+
+for t in address:
+    print(t, address[t])
