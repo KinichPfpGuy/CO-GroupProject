@@ -59,6 +59,11 @@ memory_addresses = {
     "0x1007C" : 0  
 }
 
+def sign_extend(value, bits):
+    sign_bit = 1 << (bits - 1)
+    value = int(value)
+    return (value & (sign_bit - 1)) - (value & sign_bit)
+
 def trace(pc):    
     return (f"0b{format(pc & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x0'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x1'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x2'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x3'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x4'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x5'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x6'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x7'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x8'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x9'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x10'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x11'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x12'] & 0xFFFFFFFF, '032b')} "f"0b{ format(registers['x13'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x14'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x15'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x16'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x17'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x18'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x19'] & 0xFFFFFFFF, '032b')} "f"0b{ format(registers['x20'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers ['x21'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x22'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x23'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x24'] & 0xFFFFFFFF, '032b')} " f"0b{format(registers['x25'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers ['x26'] & 0xFFFFFFFF, '032b')} "f"0b{format (registers['x27'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x28'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x29'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x30'] & 0xFFFFFFFF, '032b')} "f"0b{format(registers['x31'] & 0xFFFFFFFF, '032b')} ") 
 
@@ -118,6 +123,18 @@ def lw(rd, rs1, offset):
         message = "Invalid"
         return message
 
+def jalr(rd, rs1, offset, pc):
+    base_register = registers[rs1]
+    registers[rd] = pc
+    jumped_address = (base_register + int(offset)) & int(bin(0xFFFFFFFE), 2)
+    #convert to hex version 
+    hex_jumped_address = hex(65536+jumped_address)
+    if hex_jumped_address in memory_addresses:
+        return jumped_address
+    else:
+        message = "Invalid"
+        return message
+
 #S type instructions 
 def sw(rs1, rs2, offset):
     #address = r1 + offset 
@@ -138,7 +155,11 @@ def bne(rs1, rs2, imm, pc):
         pc = pc + (int(imm) << 1) - 4
     return pc
 
-
+#J type instructions 
+def jal(pc, rd, offset):
+    registers[rd] = pc
+    offset = sign_extend(offset, 20)
+    
 #encodings 
 def r_type(line):
     funct7 = line[:7]
