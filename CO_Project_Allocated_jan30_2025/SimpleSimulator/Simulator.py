@@ -82,8 +82,11 @@ def type_checker(opcode):
         type = "Unkown Instruction"
     return type
 
-def binary_12bit_to_decimal(binary_str):
-    return int(binary_str, 2) - ((binary_str[0] == '1') << 12)
+def binary_12bit_to_decimal(bin_str):
+    bin_str = str(bin_str)
+    if len(bin_str) == 12 and bin_str[0] == '1':
+        return -((int(bin_str, 2) ^ 0xFFF) + 1)
+    return int(bin_str, 2)
 
 #R Type Instructions
 def add(rd, rs1 ,rs2):
@@ -114,14 +117,10 @@ def addi(rd, rs1, imm):
 def lw(rd, rs1, offset):
     base_register = registers[rs1]
     address = base_register + int(offset)
-
-    #convert to hex version 
-    hex_address = hex(address)
-    if hex_address in memory_addresses:
-        registers[rd] = memory_addresses[hex_address]
+    if address in data_memory:
+        registers[rd] = data_memory[address]
     else:
-        message = "Invalid"
-        return message
+        return "Invalid address"  # Return a message for invalid address
 
 def jalr(rd, rs1, offset, pc):
     base_register = registers[rs1]
@@ -137,17 +136,12 @@ def jalr(rd, rs1, offset, pc):
 
 #S type instructions 
 def sw(rs1, rs2, offset):
-    #address = r1 + offset 
-    base_register = registers[rs1]
-    source_register = base_register + int(offset)
+    base_address = registers[rs2]
+    effective_address = base_address + int(offset)
+    print(effective_address)
+    if effective_address in data_memory:
+        data_memory[effective_address] = registers[rs1]
 
-    #convert to hex version 
-    hex_source_register = hex(source_register)
-    if hex_source_register in memory_addresses:
-        memory_addresses[hex_source_register] = registers[rs2]
-    else:
-        message = "Invalid"
-        return message 
 
 #B Type instructions
 def bne(rs1, rs2, imm, pc):
@@ -248,20 +242,30 @@ def b_type(line):
     return instruction
 
 def j_type(line):
-    imm1 = line[0:1]
-    imm2 = line[1:9]
-    imm3 = line[9:10]
-    imm4 = line[10:20]
-    rd = line[20:25]
-    opcode = line[25:32]
-    rd = "x" + str(int(rd, 2))
-    imm = imm1 + imm4 + imm3 + imm2
-    imm = str(binary_12bit_to_decimal(imm))
+    if len(line) != 32:
+        raise ValueError("Instruction must be 32 bits long")
+    imm20 = line[0]          
+    imm10_1 = line[1:11]     
+    imm11 = line[11]         
+    imm19_12 = line[12:20]   
+    rd = line[20:25]         
+    opcode = line[25:32]    
+    
+    imm_binary = imm20 + imm19_12 + imm11 + imm10_1 + '0'
+    
+    if imm20 == '1':
+        imm_decimal = -((int(imm_binary, 2) ^ 0x1FFFFF) + 1)
+    else:
+        imm_decimal = int(imm_binary, 2)
+    
+    rd_num = int(rd, 2)
+    rd_str = "x0" if rd_num == 0 else f"x{rd_num}"
+    
     if opcode == "1101111":
         operation = "jal"
-    
-    instruction = operation + " " + rd + "," + imm
-    return instruction
+    else:
+        raise ValueError(f"Unknown J-type opcode: {opcode}")
+    return f"{operation} {rd_str}, {imm_decimal}"
 
 address = {}
 
@@ -298,16 +302,27 @@ t = pc
 
 with open(output_file, "w") as f:
     pc = 4
-    while (pc < t):
+    q = 0
+    while (pc < t and q == 0):
         x = address[pc]
-        x = x.replace(',', ' ')
-        x = x.replace('#', '')
+        line = x
+        x = x.replace(',', ' ').replace('#', '').replace('(', ' ').replace(')', '')
         x = x.split(" ")
+        if x[0] == ("lw"):
+            x.pop(2)
+        if x[0] == ("sw"):
+            x.pop(2)
+        if x[0] == ("jal"):
+            x.pop(2)
         print(pc, x)
         if x[0] == "srl":
             srl(x[1], x[2], x[3])
         elif x[0] == "slt":
             slt(x[1], x[2], x[3])
+        elif x[0] == "or":
+            or1(x[1], x[2], x[3])
+        elif x[0] == "and":
+            and1(x[1], x[2], x[3])
         elif x[0] == "addi":
             addi(x[1], x[2], x[3])
         elif x[0] == "bne":
@@ -316,11 +331,24 @@ with open(output_file, "w") as f:
             add(x[1], x[2], x[3])
         elif x[0] == "sub":
             sub(x[1], x[2], x[3])
+        elif x[0] == "lw":
+            lw(x[1], x[3], x[2])
+        elif x[0] == "sw":
+            sw(x[1], x[3], x[2])
+        elif x[0] == "jalr":
+            pc = jalr(x[1], x[2], x[3], pc)
+        elif x[0] == "jal":
+            jal(pc, x[1], x[2])
+        elif line == "beq x0,x0,0":
+            pc = pc - 4
+            q = 1
+        
+        registers["x0"] = 0 #Hardcoded to zero
+      
         f.write(trace(pc)+"\n")
         pc += 4
     for x in data_memory:
         f.write("0x"+format(x, '08X')+":0b"+format(data_memory[x] & 0xFFFFFFFF, '032b')+"\n")
-
 
 
 for t in address:
