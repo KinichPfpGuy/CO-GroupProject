@@ -121,7 +121,7 @@ def sw(rs1, rs2, offset):
 #B Type instructions
 def bne(rs1, rs2, imm, pc):
     if registers[rs1] != registers[rs2]:
-        pc = pc + (int(imm) << 1) - 4
+        pc = pc + (int(imm) << 1)
     return pc
 
 def beq(rs1, rs2, imm, pc):
