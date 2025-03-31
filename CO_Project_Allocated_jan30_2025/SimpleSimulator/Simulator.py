@@ -121,7 +121,7 @@ def sw(rs1, rs2, offset):
 #B Type instructions
 def bne(rs1, rs2, imm, pc):
     if registers[rs1] != registers[rs2]:
-        pc = pc + (int(imm) << 1)
+        pc = pc + (int(imm) << 1) - 4
     return pc
 
 def beq(rs1, rs2, imm, pc):
@@ -313,7 +313,7 @@ with open(output_file, "w") as f:
         elif x[0] == "addi":
             addi(x[1], x[2], x[3])
         elif x[0] == "bne":
-            pc = bne(x[1], x[2], x[3], pc) - 4
+            pc = bne(x[1], x[2], x[3], pc)
         elif x[0] == "beq":
             pc = beq(x[1], x[2], x[3], pc)
         elif x[0] == "add":
