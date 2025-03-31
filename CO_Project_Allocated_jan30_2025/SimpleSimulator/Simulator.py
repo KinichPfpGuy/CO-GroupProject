@@ -124,6 +124,13 @@ def bne(rs1, rs2, imm, pc):
         pc = pc + (int(imm) << 1) - 4
     return pc
 
+def beq(rs1, rs2, imm, pc):
+    if rs1 == 'x0' and rs2 == 'x0' and imm == "0":
+        print("Halting execution.")
+        return pc
+    if registers[rs1] == registers[rs2]:
+        pc = pc + (int(imm) << 1) - 4
+    return pc
 #J type instructions 
 def jal(pc, rd, offset):
     registers[rd] = pc
@@ -307,6 +314,8 @@ with open(output_file, "w") as f:
             addi(x[1], x[2], x[3])
         elif x[0] == "bne":
             pc = bne(x[1], x[2], x[3], pc) - 4
+        elif x[0] == "beq":
+            pc = beq(x[1], x[2], x[3], pc)
         elif x[0] == "add":
             add(x[1], x[2], x[3])
         elif x[0] == "sub":
