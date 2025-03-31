@@ -25,38 +25,14 @@ data_memory = {
     }
 
 memory_addresses = {
-    "0x10000" : 0,  
-    "0x10004" : 0,  
-    "0x10008" : 0, 
-    "0x1000C" : 0,  
-    "0x10010" : 0, 
-    "0x10014" : 0,  
-    "0x10018" : 0,
-    "0x1001C" : 0, 
-    "0x10020" : 0,  
-    "0x10024" : 0,  
-    "0x10028" : 0,  
-    "0x1002C" : 0,  
-    "0x10030" : 0,  
-    "0x10034" : 0,  
-    "0x10038" : 0,  
-    "0x1003C" : 0,  
-    "0x10040" : 0,  
-    "0x10044" : 0,  
-    "0x10048" : 0,  
-    "0x1004C" : 0,  
-    "0x10050" : 0,  
-    "0x10054" : 0,  
-    "0x10058" : 0,  
-    "0x1005C" : 0,  
-    "0x10060" : 0,  
-    "0x10064" : 0,  
-    "0x10068" : 0,  
-    "0x1006C" : 0,  
-    "0x10070" : 0,  
-    "0x10074" : 0,  
-    "0x10078" : 0,  
-    "0x1007C" : 0  
+    "0x10000" : 0, "0x10004" : 0, "0x10008" : 0, "0x1000C" : 0,  
+    "0x10010" : 0, "0x10014" : 0, "0x10018" : 0, "0x1001C" : 0, 
+    "0x10020" : 0, "0x10024" : 0, "0x10028" : 0, "0x1002C" : 0,
+    "0x10030" : 0, "0x10034" : 0, "0x10038" : 0, "0x1003C" : 0,
+    "0x10040" : 0, "0x10044" : 0, "0x10048" : 0, "0x1004C" : 0,
+    "0x10050" : 0, "0x10054" : 0, "0x10058" : 0, "0x1005C" : 0,
+    "0x10060" : 0, "0x10064" : 0, "0x10068" : 0, "0x1006C" : 0,
+    "0x10070" : 0, "0x10074" : 0, "0x10078" : 0, "0x1007C" : 0
 }
 
 def sign_extend(value, bits):
@@ -137,10 +113,9 @@ def jalr(rd, rs1, offset, pc):
 #S type instructions 
 def sw(rs1, rs2, offset):
     base_address = registers[rs2]
+    offset = sign_extend(offset, 12)
     effective_address = base_address + int(offset)
-    print(effective_address)
-    if effective_address in data_memory:
-        data_memory[effective_address] = registers[rs1]
+    data_memory[effective_address] = registers[rs1]
 
 
 #B Type instructions
@@ -348,7 +323,8 @@ with open(output_file, "w") as f:
         f.write(trace(pc)+"\n")
         pc += 4
     for x in data_memory:
-        f.write("0x"+format(x, '08X')+":0b"+format(data_memory[x] & 0xFFFFFFFF, '032b')+"\n")
+        if 0x00010000 <= x <= 0x0001007C:
+            f.write("0x" + format(x, '08X') + ":0b" + format(data_memory[x] & 0xFFFFFFFF, '032b') + "\n")
 
 
 for t in address:
