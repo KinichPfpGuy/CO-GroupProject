@@ -103,7 +103,7 @@ def jalr(rd, rs1, offset, pc):
     registers[rd] = pc
     jumped_address = (base_register + int(offset)) & int(bin(0xFFFFFFFE), 2)
     #convert to hex version 
-    hex_jumped_address = hex(65536+jumped_address)
+    hex_jumped_address = '0x{:X}'.format(65536 + jumped_address)
     if hex_jumped_address in memory_addresses:
         return jumped_address
     else:
@@ -127,7 +127,9 @@ def bne(rs1, rs2, imm, pc):
 #J type instructions 
 def jal(pc, rd, offset):
     registers[rd] = pc
-    offset = sign_extend(offset, 20)
+    extended_offset = sign_extend(offset, 20)
+    new_pc = (pc + extended_offset) & 0xFFFFFFFF
+    return new_pc - 4
     
 #encodings 
 def r_type(line):
@@ -285,12 +287,15 @@ with open(output_file, "w") as f:
         x = x.split(" ")
         if x[0] == ("lw"):
             x.pop(2)
-        if x[0] == ("sw"):
+        elif x[0] == ("sw"):
             x.pop(2)
-        if x[0] == ("jal"):
+        elif x[0] == ("jal"):
             x.pop(2)
         print(pc, x)
-        if x[0] == "srl":
+        if line == "beq x0,x0,0":
+            pc = pc - 4
+            q = 1
+        elif x[0] == "srl":
             srl(x[1], x[2], x[3])
         elif x[0] == "slt":
             slt(x[1], x[2], x[3])
@@ -301,7 +306,7 @@ with open(output_file, "w") as f:
         elif x[0] == "addi":
             addi(x[1], x[2], x[3])
         elif x[0] == "bne":
-            pc = bne(x[1], x[2], x[3], pc)
+            pc = bne(x[1], x[2], x[3], pc) - 4
         elif x[0] == "add":
             add(x[1], x[2], x[3])
         elif x[0] == "sub":
@@ -313,10 +318,7 @@ with open(output_file, "w") as f:
         elif x[0] == "jalr":
             pc = jalr(x[1], x[2], x[3], pc)
         elif x[0] == "jal":
-            jal(pc, x[1], x[2])
-        elif line == "beq x0,x0,0":
-            pc = pc - 4
-            q = 1
+            pc = jal(pc, x[1], x[2])
         
         registers["x0"] = 0 #Hardcoded to zero
       
