@@ -1,6 +1,10 @@
 import sys
-input_file = r"C:\Users\ajays\OneDrive\Desktop\output.txt"
-output_file = r"C:\Users\ajays\OneDrive\Desktop\meow.txt"
+input_file = sys.argv[1]
+output_file = sys.argv[2]
+
+
+valid_instructions = ["add", "sub", "or", "and", "slt", "srl", "addi", "lw", "sw", "bne", "beq", "jalr", "jal"]
+valid_registers = ["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x18", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28", "x29", "x30", "x31"]
 
 registers = {
     "x0": 0, "x1": 0, "x2": 380, "x3": 0,
@@ -298,45 +302,74 @@ with open(output_file, "w") as f:
             x.pop(2)
         elif x[0] == ("jal"):
             x.pop(2)
-        print(pc, x)
         if line == "beq x0,x0,0":
+            if pc != t - 4:
+                raise SyntaxError("Virtual Halt not used as the last instruction")
             pc = pc - 4
             q = 1
+        elif x[0] not in valid_instructions:
+            raise SyntaxError("Invalid instruction")
         elif x[0] == "srl":
+            if x[1] not in valid_registers or x[2] not in valid_registers or x[3] not in valid_registers:
+                raise SyntaxError("Invalid register name")
             srl(x[1], x[2], x[3])
         elif x[0] == "slt":
+            if x[1] not in valid_registers or x[2] not in valid_registers or x[3] not in valid_registers:
+                raise SyntaxError("Invalid register name")
             slt(x[1], x[2], x[3])
         elif x[0] == "or":
+            if x[1] not in valid_registers or x[2] not in valid_registers or x[3] not in valid_registers:
+                raise SyntaxError("Invalid register name")
             or1(x[1], x[2], x[3])
         elif x[0] == "and":
+            if x[1] not in valid_registers or x[2] not in valid_registers or x[3] not in valid_registers:
+                raise SyntaxError("Invalid register name")
             and1(x[1], x[2], x[3])
         elif x[0] == "addi":
+            if len(x[3]) > 12:
+                raise SyntaxError("Immediate value out of bounds")
+            if x[1] not in valid_registers or x[2] not in valid_registers:
+                raise SyntaxError("Invalid register name")
             addi(x[1], x[2], x[3])
         elif x[0] == "bne":
+            if x[1] not in valid_registers or x[2] not in valid_registers:
+                raise SyntaxError("Invalid register name")
             pc = bne(x[1], x[2], x[3], pc)
         elif x[0] == "beq":
+            if x[1] not in valid_registers or x[2] not in valid_registers:
+                raise SyntaxError("Invalid register name")
             pc = beq(x[1], x[2], x[3], pc)
         elif x[0] == "add":
+            if x[1] not in valid_registers or x[2] not in valid_registers or x[3] not in valid_registers:
+                raise SyntaxError("Invalid register name")
             add(x[1], x[2], x[3])
         elif x[0] == "sub":
+            if x[1] not in valid_registers or x[2] not in valid_registers or x[3] not in valid_registers:
+                raise SyntaxError("Invalid register name")
             sub(x[1], x[2], x[3])
         elif x[0] == "lw":
+            if x[1] not in valid_registers or x[3] not in valid_registers:
+                raise SyntaxError("Invalid register name")
             lw(x[1], x[3], x[2])
         elif x[0] == "sw":
+            if x[1] not in valid_registers or x[3] not in valid_registers:
+                raise SyntaxError("Invalid register name")
             sw(x[1], x[3], x[2])
         elif x[0] == "jalr":
+            if x[1] not in valid_registers or x[2] not in valid_registers:
+                raise SyntaxError("Invalid register name")
             pc = jalr(x[1], x[2], x[3], pc)
         elif x[0] == "jal":
+            if x[1] not in valid_registers:
+                raise SyntaxError("Invalid register name")
             pc = jal(pc, x[1], x[2])
         
         registers["x0"] = 0 #Hardcoded to zero
       
         f.write(trace(pc)+"\n")
         pc += 4
+    if line != "beq x0,x0,0":
+        raise SyntaxError("Missing Virtual Halt instruction")
     for x in data_memory:
         if 0x00010000 <= x <= 0x0001007C:
             f.write("0x" + format(x, '08X') + ":0b" + format(data_memory[x] & 0xFFFFFFFF, '032b') + "\n")
-
-
-for t in address:
-    print(t, address[t])
